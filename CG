@@ -1,0 +1,661 @@
+// to draw concave polygon with desired color
+
+
+#include <SFML/Graphics.hpp>
+#include <vector>
+
+// Base class for drawing shapes
+class ShapeDrawer {
+public:
+    virtual void draw(sf::RenderWindow &window) = 0; // Pure virtual function
+};
+
+// Derived class for drawing and filling a concave polygon
+class ConcavePolygon : public ShapeDrawer {
+public:
+    ConcavePolygon(const std::vector<sf::Vector2f> &points, const sf::Color &color)
+        : m_points(points), m_color(color) {
+        if (m_points.size() >= 3) { // Check if there are at least 3 points
+            m_polygon.setPointCount(m_points.size());
+            for (size_t i = 0; i < m_points.size(); ++i) {
+                m_polygon.setPoint(i, m_points[i]);
+            }
+            m_polygon.setFillColor(m_color); // Set the fill color
+        }
+    }
+
+    void draw(sf::RenderWindow &window) override {
+        window.draw(m_polygon); // Draw the polygon
+    }
+
+private:
+    std::vector<sf::Vector2f> m_points; // Store the points of the polygon
+    sf::Color m_color;                  // Color of the polygon
+    sf::ConvexShape m_polygon;          // Convex shape to represent the polygon
+};
+
+int main() {
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Concave Polygon Fill");
+
+    // Define points for the concave polygon
+    std::vector<sf::Vector2f> points = {
+        {100, 100},
+        {300, 100},
+        {400, 200},
+        {300, 300},
+        {100, 300},
+        {50, 200}
+    };
+
+    // Define the fill color
+    sf::Color fillColor = sf::Color::Green;
+
+    // Create the concave polygon
+    ConcavePolygon concavePolygon(points, fillColor);
+
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+            }
+        }
+
+        window.clear(sf::Color::White); // Clear the window with white background
+        concavePolygon.draw(window);   // Draw the concave polygon
+        window.display();              // Display the rendered frame
+    }
+
+    return 0;
+}
+
+
+
+To compile  : g++ main.cpp -o polygon -lsfml-graphics -lsfml-window -lsfml-system
+
+
+To run : ./polygon
+
+
+
+
+//  cohen sutherland line clipping algo
+
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <iostream>
+
+// Define the clipping window boundaries
+const float Xmin = 0.2f;
+const float Xmax = 0.8f;
+const float Ymin = 0.2f;
+const float Ymax = 0.8f;
+
+// Define region codes
+enum RegionCode {
+    INSIDE = 0,    // 0000
+    LEFT = 1,      // 0001
+    RIGHT = 2,     // 0010
+    BOTTOM = 4,    // 0100
+    TOP = 8        // 1000
+};
+
+// Compute the region code for a point
+int computeOutCode(float x, float y) {
+    int code = INSIDE;
+
+    if (x < Xmin)      code |= LEFT;
+    else if (x > Xmax) code |= RIGHT;
+    if (y < Ymin)      code |= BOTTOM;
+    else if (y > Ymax) code |= TOP;
+
+    return code;
+}
+
+// Cohen-Sutherland Line Clipping Algorithm
+void cohenSutherlandClip(float &x0, float &y0, float &x1, float &y1) {
+    int code0 = computeOutCode(x0, y0);
+    int code1 = computeOutCode(x1, y1);
+    bool accept = false;
+
+    while (true) {
+        if ((code0 | code1) == 0) {  // Both points inside
+            accept = true;
+            break;
+        } else if (code0 & code1) { // Both points outside (trivial rejection)
+            break;
+        } else {
+            // Calculate intersection
+            float x, y;
+            int outCode = code0 ? code0 : code1;
+
+            if (outCode & TOP) { // Point is above the clipping area
+                x = x0 + (x1 - x0) * (Ymax - y0) / (y1 - y0);
+                y = Ymax;
+            } else if (outCode & BOTTOM) { // Point is below the clipping area
+                x = x0 + (x1 - x0) * (Ymin - y0) / (y1 - y0);
+                y = Ymin;
+            } else if (outCode & RIGHT) { // Point is to the right of the clipping area
+                y = y0 + (y1 - y0) * (Xmax - x0) / (x1 - x0);
+                x = Xmax;
+            } else if (outCode & LEFT) { // Point is to the left of the clipping area
+                y = y0 + (y1 - y0) * (Xmin - x0) / (x1 - x0);
+                x = Xmin;
+            }
+
+            // Replace the point outside the clipping region
+            if (outCode == code0) {
+                x0 = x;
+                y0 = y;
+                code0 = computeOutCode(x0, y0);
+            } else {
+                x1 = x;
+                y1 = y;
+                code1 = computeOutCode(x1, y1);
+            }
+        }
+    }
+
+    if (accept) {
+        // Draw the clipped line
+        glBegin(GL_LINES);
+        glVertex2f(x0, y0);
+        glVertex2f(x1, y1);
+        glEnd();
+    }
+}
+
+// OpenGL Display Function
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Draw clipping rectangle
+    glColor3f(0.0f, 0.0f, 1.0f); // Blue for the rectangle
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(Xmin, Ymin);
+    glVertex2f(Xmax, Ymin);
+    glVertex2f(Xmax, Ymax);
+    glVertex2f(Xmin, Ymax);
+    glEnd();
+
+    // Define a line to clip
+    float x0 = 0.1f, y0 = 0.1f, x1 = 0.9f, y1 = 0.9f;
+
+    // Set line color
+    glColor3f(1.0f, 0.0f, 0.0f); // Red for original line
+    glBegin(GL_LINES);
+    glVertex2f(x0, y0);
+    glVertex2f(x1, y1);
+    glEnd();
+
+    // Perform line clipping
+    glColor3f(0.0f, 1.0f, 0.0f); // Green for clipped line
+    cohenSutherlandClip(x0, y0, x1, y1);
+
+    glFlush();
+}
+
+int main() {
+    if (!glfwInit()) {
+        std::cerr << "Failed to initialize GLFW!" << std::endl;
+        return -1;
+    }
+
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Cohen-Sutherland Line Clipping", nullptr, nullptr);
+    if (!window) {
+        std::cerr << "Failed to create GLFW window!" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    glfwMakeContextCurrent(window);
+    glewExperimental = GL_TRUE;
+    if (glewInit() != GLEW_OK) {
+        std::cerr << "Failed to initialize GLEW!" << std::endl;
+        return -1;
+    }
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+
+    while (!glfwWindowShouldClose(window)) {
+        display();
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return 0;
+}
+
+to commpile: g++ cohen_sutherland.cpp -o cohen_sutherland -lGL -lGLU -lglut -lGLEW -lglfw
+
+To run :   ./cohen_sutherland
+
+
+//encapsulation : fig  ---- circle triangle circle
+
+
+#include <iostream>
+#include <graphics.h>
+
+using namespace std;
+
+// DDA Line Drawing Algorithm
+void ddaAlg(int x1, int y1, int x2, int y2) {
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+    int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+    float xInc = dx / (float)steps;
+    float yInc = dy / (float)steps;
+
+    float x = x1, y = y1;
+    for (int i = 0; i <= steps; i++) {
+        putpixel(x, y, 14);
+        x += xInc;
+        y += yInc;
+    }
+}
+
+// Display Circle Points
+void display(int xc, int yc, int x, int y) {
+    putpixel(xc + x, yc + y, 3);
+    putpixel(xc - x, yc + y, 3);
+    putpixel(xc + x, yc - y, 3);
+    putpixel(xc - x, yc - y, 3);
+    putpixel(xc + y, yc + x, 3);
+    putpixel(xc - y, yc + x, 3);
+    putpixel(xc + y, yc - x, 3);
+    putpixel(xc - y, yc - x, 3);
+}
+
+// Bresenham's Circle Algorithm
+void CircleB(int xc, int yc, int r) {
+    int x = 0, y = r;
+    int d = 3 - 2 * r;
+    display(xc, yc, x, y);
+    while (y >= x) {
+        x++;
+        if (d > 0) {
+            y--;
+            d = d + 4 * (x - y) + 10;
+        } else {
+            d = d + 4 * x + 6;
+        }
+        display(xc, yc, x, y);
+    }
+}
+
+int main() {
+    int gd = DETECT, gm;
+    initgraph(&gd, &gm, NULL);
+
+    // Draw Circle
+    int xc = 200, yc = 200, radius = 100;
+    CircleB(xc, yc, radius);
+
+    // Draw Lines (Pattern)
+    ddaAlg(100, 200, 300, 200);  // Horizontal Line
+    ddaAlg(200, 100, 200, 300);  // Vertical Line
+
+    getch();
+    closegraph();
+    return 0;
+}
+
+
+
+To compile: g++ pattern.cpp -o pattern -lgraph
+
+
+
+pattern file name
+
+
+To run :./pattern
+
+
+
+
+
+
+
+//2 D transformation
+
+
+
+#include <iostream>
+#include <graphics.h>
+#include <cmath>
+
+using namespace std;
+
+class Transform {
+    int a[20][3], c[20][3], m;
+
+public:
+    void accept();
+    void object();
+    void operator*(float b[3][3]);
+};
+
+void Transform::accept() {
+    cout << "\nEnter the Number of Edges: ";
+    cin >> m;
+    cout << "\nEnter the Coordinates: ";
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (j >= 2)
+                a[i][j] = 1; // Homogeneous coordinates
+            else
+                cin >> a[i][j];
+        }
+    }
+}
+
+void Transform::object() {
+    int gd = DETECT, gm;
+    initgraph(&gd, &gm, NULL);
+
+    // Draw X and Y axes
+    line(300, 0, 300, 600);
+    line(0, 300, 600, 300);
+
+    // Original object
+    for (int i = 0; i < m - 1; i++) {
+        line(300 + a[i][0], 300 - a[i][1], 300 + a[i + 1][0], 300 - a[i + 1][1]);
+    }
+    line(300 + a[0][0], 300 - a[0][1], 300 + a[m - 1][0], 300 - a[m - 1][1]);
+
+    // Transformed object
+    for (int i = 0; i < m - 1; i++) {
+        line(300 + c[i][0], 300 - c[i][1], 300 + c[i + 1][0], 300 - c[i + 1][1]);
+    }
+    line(300 + c[0][0], 300 - c[0][1], 300 + c[m - 1][0], 300 - c[m - 1][1]);
+
+    cout << "Press any key to continue...";
+    getch();
+    closegraph();
+}
+
+void Transform::operator*(float b[3][3]) {
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < 3; j++) {
+            c[i][j] = 0;
+            for (int k = 0; k < 3; k++) {
+                c[i][j] += a[i][k] * b[k][j];
+            }
+        }
+    }
+}
+
+int main() {
+    int ch, tx, ty, sx, sy;
+    float deg, theta, b[3][3];
+    Transform t;
+
+    t.accept();
+
+    cout << "\n1. Translation";
+    cout << "\n2. Scaling";
+    cout << "\n3. Rotation";
+    cout << "\nEnter your choice: ";
+    cin >> ch;
+
+    switch (ch) {
+    case 1:
+        cout << "\nTRANSLATION OPERATION\n";
+        cout << "Enter value for tx and ty: ";
+        cin >> tx >> ty;
+        b[0][0] = b[1][1] = b[2][2] = 1;
+        b[0][1] = b[0][2] = b[1][0] = b[1][2] = 0;
+        b[2][0] = tx;
+        b[2][1] = ty;
+        t * b;
+        t.object();
+        break;
+
+    case 2:
+        cout << "\nSCALING OPERATION\n";
+        cout << "Enter value for sx, sy: ";
+        cin >> sx >> sy;
+        b[0][0] = sx;
+        b[1][1] = sy;
+        b[2][2] = 1;
+        b[0][1] = b[0][2] = b[1][0] = b[1][2] = b[2][0] = b[2][1] = 0;
+        t * b;
+        t.object();
+        break;
+
+    case 3:
+        cout << "\nROTATION OPERATION\n";
+        cout << "Enter value for angle: ";
+        cin >> deg;
+        theta = deg * (3.14 / 180);
+        b[0][0] = cos(theta);
+        b[0][1] = -sin(theta);
+        b[1][0] = sin(theta);
+        b[1][1] = cos(theta);
+        b[0][2] = b[1][2] = b[2][0] = b[2][1] = 0;
+        b[2][2] = 1;
+        t * b;
+        t.object();
+        break;
+
+    default:
+        cout << "\nInvalid choice";
+    }
+
+    return 0;
+}
+  To compile:  g++ transform.cpp -o transform -lgraph
+
+
+To run :./transform
+
+
+
+
+//hilbert curve:
+
+#include <SFML/Graphics.hpp>
+#include <iostream>
+#include <cmath>
+
+using namespace std;
+
+// Function to draw the Hilbert curve recursively
+void hilbert(int n, float x, float y, float xi, float xj, float yi, float yj, sf::VertexArray& lines) {
+    if (n <= 0) {
+        // Append a line connecting the current position
+        lines.append(sf::Vertex(sf::Vector2f(x + (xi + yi) / 2, y + (xj + yj) / 2), sf::Color::White));
+    } else {
+        // Recursively draw the Hilbert curve
+        hilbert(n - 1, x, y, yi / 2, yj / 2, xi / 2, xj / 2, lines);
+        hilbert(n - 1, x + xi / 2, y + xj / 2, xi / 2, xj / 2, yi / 2, yj / 2, lines);
+        hilbert(n - 1, x + xi / 2 + yi / 2, y + xj / 2 + yj / 2, xi / 2, xj / 2, yi / 2, yj / 2, lines);
+        hilbert(n - 1, x + xi / 2 + yi, y + xj / 2 + yj - yi / 2, -yi / 2, -yj / 2, -xi / 2, -xj / 2, lines);
+    }
+}
+
+int main() {
+    int n; // Level of recursion for the Hilbert curve
+    cout << "Enter the level of recursion for the Hilbert curve (0-5 recommended): ";
+    cin >> n;
+
+    // Create a window
+    sf::RenderWindow window(sf::VideoMode(800, 800), "Hilbert Curve");
+
+    // Create a vertex array to hold the lines of the Hilbert curve
+    sf::VertexArray lines(sf::LinesStrip);
+
+    // Generate the Hilbert curve points
+    hilbert(n, 0, 0, 800, 0, 0, 800, lines);
+
+    // Main loop
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
+                window.close();
+        }
+
+        window.clear();
+        window.draw(lines); // Draw the Hilbert curve
+        window.display();
+    }
+
+    return 0;
+}
+ To compile:   g++ hilbert.cpp -o hilbert -lsfml-graphics -lsfml-window -lsfml-system
+
+To run: ./hilbert
+
+
+
+
+//stack or queue using graphics
+
+#include <GL/glut.h>
+#include <iostream>
+#include <cstdlib>
+
+using namespace std;
+
+// Define a simple Stack class
+class Stack {
+private:
+    static const int max = 10; // Maximum size of the stack
+    int arr[max];
+    int top;
+
+public:
+    Stack() { top = -1; }
+
+    bool isEmpty() {
+        return top == -1;
+    }
+
+    bool isFull() {
+        return top == max - 1;
+    }
+
+    void push(int x) {
+        if (isFull()) {
+            cout << "Stack Overflow" << endl;
+            return;
+        }
+        arr[++top] = x;
+    }
+
+    int pop() {
+        if (isEmpty()) {
+            cout << "Stack Underflow" << endl;
+            abort();
+        }
+        return arr[top--];
+    }
+
+    int size() {
+        return top + 1;
+    }
+
+    int peek(int index) {
+        if (index <= top)
+            return arr[index];
+        return -1; // Invalid index
+    }
+};
+
+// Global stack object
+Stack stack;
+
+// OpenGL display function
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLoadIdentity();
+
+    // Draw the stack visually
+    for (int i = 0; i < stack.size(); ++i) {
+        int value = stack.peek(i);
+
+        // Draw a rectangle representing a stack element
+        float y = 0.8f - i * 0.15f;
+        glColor3f(0.5f, 0.8f, 0.9f); // Color of the rectangle
+        glBegin(GL_QUADS);
+        glVertex2f(-0.3f, y);
+        glVertex2f(0.3f, y);
+        glVertex2f(0.3f, y - 0.1f);
+        glVertex2f(-0.3f, y - 0.1f);
+        glEnd();
+
+        // Draw the value inside the rectangle
+        glColor3f(0.0f, 0.0f, 0.0f); // Color of the text
+        glRasterPos2f(-0.1f, y - 0.07f);
+        string text = to_string(value);
+        for (char c : text)
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+    }
+
+    glFlush();
+}
+
+// OpenGL keyboard input handler
+void keyboard(unsigned char key, int x, int y) {
+    if (key == 'p') {
+        // Push a random value onto the stack
+        int value = rand() % 100;
+        cout << "Pushed: " << value << endl;
+        stack.push(value);
+    } else if (key == 'o') {
+        // Pop a value from the stack
+        if (!stack.isEmpty()) {
+            int value = stack.pop();
+            cout << "Popped: " << value << endl;
+        }
+    } else if (key == 'q') {
+        // Quit the program
+        exit(0);
+    }
+
+    glutPostRedisplay(); // Redraw the scene
+}
+
+// OpenGL initialization function
+void init() {
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // Background color
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(-1.0, 1.0, -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+}
+
+int main(int argc, char** argv) {
+    cout << "Press 'p' to push a random value onto the stack." << endl;
+    cout << "Press 'o' to pop a value from the stack." << endl;
+    cout << "Press 'q' to quit." << endl;
+
+    // Initialize OpenGL and GLUT
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(800, 600);
+    glutCreateWindow("Stack Simulation");
+
+    init();
+    glutDisplayFunc(display);
+    glutKeyboardFunc(keyboard);
+    glutMainLoop();
+
+    return 0;
+}
+ To compile :g++ stack_simulation.cpp -o stack_simulation -lGL -lGLU -lglut
+
+To run: ./stack_simulation
+
+
+
+
+
