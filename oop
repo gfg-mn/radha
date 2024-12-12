@@ -1,0 +1,636 @@
+//1.complex no. :
+
+#include <iostream>
+
+using namespace std;
+
+class Complex {
+private:
+    int real, img;
+
+public:
+    // Default constructor (creates 0 + 0i)
+    Complex() {
+        real = 0;
+        img = 0;
+    }
+
+    // Parameterized constructor
+    Complex(int r, int i) {
+        real = r;
+        img = i;
+    }
+
+    // Getter and setter functions
+    inline void setReal(int r) { real = r; }
+    inline void setImg(int i) { img = i; }
+
+    inline int getReal() { return real; }
+    inline int getImg() { return img; }
+
+    // Display function
+    void display() {
+        cout << real << " + " << img << "i" << endl;
+    }
+
+    // Friend function for operator overloading
+
+    // Addition operator
+    friend Complex operator+(const Complex &c1, const Complex &c2) {
+        return Complex(c1.real + c2.real, c1.img + c2.img);
+    }
+
+    // Subtraction operator
+    friend Complex operator-(const Complex &c1, const Complex &c2) {
+        return Complex(c1.real - c2.real, c1.img - c2.img);
+    }
+
+    // Multiplication operator
+    friend Complex operator*(const Complex &c1, const Complex &c2) {
+        int realPart = c1.real * c2.real - c1.img * c2.img;
+        int imgPart = c1.real * c2.img + c1.img * c2.real;
+        return Complex(realPart, imgPart);
+    }
+
+    // Overloaded << operator for output
+    friend ostream& operator<<(ostream &os, const Complex &c) {
+        os << c.real << " + " << c.img << "i";
+        return os;
+    }
+
+    // Overloaded >> operator for input
+    friend istream& operator>>(istream &is, Complex &c) {
+        is >> c.real >> c.img;
+        return is;
+    }
+};
+
+int main() {
+    // Create complex number objects
+    Complex c1(10, 20), c2(10, 8);
+
+    // Display complex numbers
+    cout << "Complex 1 is: " << c1 << endl;
+    cout << "Complex 2 is: " << c2 << endl;
+
+    // Perform addition, subtraction, and multiplication
+    Complex c3, c4, c5;
+    c3 = c1 + c2;
+    c4 = c1 - c2;
+    c5 = c1 * c2;
+
+    // Display results
+    cout << "\nAddition is: " << c3 << endl;
+    cout << "Subtraction is: " << c4 << endl;
+    cout << "Multiplication is: " << c5 << endl;
+
+    // Take user input for two more complex numbers
+    Complex c6, c7;
+    cout << "\nEnter Complex number 6: ";
+    cin >> c6;
+    cout << "Enter Complex number 7: ";
+    cin >> c7;
+
+    // Perform multiplication
+    Complex c8 = c6 * c7;
+    cout << "The multiplication of Complex number 6 and 7 is: " << c8 << endl;
+
+    return 0;
+}
+
+
+
+
+
+
+//2.student info.:
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+class studentDatabase; // Forward declaration for the friend class
+
+class student {
+private:
+    string name;
+    static int rollNo;
+    string Class;
+    char division;
+    string DOB; //DD-MM-YYYY
+    string bloodGroup;
+    string address;
+    string drivingLicense;
+    string telephoneNumber;
+    string other;
+
+public:
+    // Default Constructor
+    student() : name(""), Class(""), division('0'), DOB(""), bloodGroup(""), 
+                address(""), drivingLicense(""), telephoneNumber(""), other("") {
+        rollNo++;
+    }
+
+    // Parameterized Constructor
+    student(string n, string c, char d, string dob, string bg, string addr, string dl, string tp, string oth) 
+        : name(n), Class(c), division(d), DOB(dob), bloodGroup(bg), 
+          address(addr), drivingLicense(dl), telephoneNumber(tp), other(oth) {
+        rollNo++;
+    }
+
+    // Copy Constructor
+    student(const student& s) : name(s.name), Class(s.Class), division(s.division), DOB(s.DOB),
+                                 bloodGroup(s.bloodGroup), address(s.address), 
+                                 drivingLicense(s.drivingLicense), telephoneNumber(s.telephoneNumber),
+                                 other(s.other) {
+        rollNo++;
+    }
+
+    // Destructor
+    ~student() {
+        // Optionally, clean up dynamically allocated memory if any
+        cout << "Destructor called for " << name << endl;
+    }
+
+    // Function to print student data
+    void getData() const {
+        cout << "Name is: " << name << endl;
+        cout << "Roll number is: " << rollNo << endl;
+        cout << "Class is: " << Class << endl;
+        cout << "Division: " << division << endl;
+        cout << "Date of Birth is: " << DOB << endl;
+        cout << "Blood group is: " << bloodGroup << endl;
+        cout << "Address: " << address << endl;
+        cout << "Driving License number is: " << drivingLicense << endl;
+        cout << "Telephone number: " << telephoneNumber << endl;
+        cout << "Other Information: " << other << endl;
+        cout << endl;
+    }
+
+    // Inline method to set data
+    inline void setData(string n, string c, char ch, string dob, string bg, string addr, string dl, string tp, string oth) {
+        name = n;
+        Class = c;
+        division = ch;
+        DOB = dob;
+        bloodGroup = bg;
+        address = addr;
+        drivingLicense = dl;
+        telephoneNumber = tp;
+        other = oth;
+    }
+
+    // Static method to get Roll number
+    static int getRollNo() {
+        return rollNo;
+    }
+
+    // Friend class declaration
+    friend class studentDatabase;
+};
+
+// Static member initialization
+int student::rollNo = 0;
+
+// studentDatabase class to manage the student records
+class studentDatabase {
+private:
+    static student* students[100];
+    static int studentCount;
+
+public:
+    // Static method to add student to the database
+    static void addStudent(student* s) {
+        if (studentCount >= 100) {
+            cout << "Database Full" << endl;
+        } else {
+            students[studentCount] = s;
+            studentCount++;
+        }
+    }
+
+    // Static method to print all student records
+    static void printAllStudents() {
+        for (int i = 0; i < studentCount; i++) {
+            students[i]->getData();
+        }
+    }
+
+    // Static method to clean up dynamically allocated memory
+    static void cleanUp() {
+        for (int i = 0; i < studentCount; i++) {
+            delete students[i]; // Free memory for each dynamically allocated student
+        }
+        studentCount = 0; // Reset the student count
+    }
+};
+
+// Static member initialization
+student* studentDatabase::students[100];
+int studentDatabase::studentCount = 0;
+
+int main() {
+    // Create student objects using dynamic memory allocation
+    student* s1 = new student("John Doe", "10th", 'A', "01-01-2005", "O+", "123 Main St", "DL123456", "5-1234", "N/A");
+    student* s2 = new student("Jane Smith", "11th", 'B', "02-02-2004", "A+", "456 Elm St", "DL789012", "5-5678", "N/A");
+
+    // Using the static member function to add students to the database
+    studentDatabase::addStudent(s1);
+    studentDatabase::addStudent(s2);
+
+    // Print all students in the database
+    studentDatabase::printAllStudents();
+
+    // Clean up dynamically allocated memory
+    studentDatabase::cleanUp();
+
+    return 0;
+}
+
+
+
+//3.publication books:
+
+#include <iostream>
+#include <string>
+using namespace std;
+
+class publication {
+private:
+    string title;
+    float price;
+
+public:
+    // Constructor with default values
+    publication(string n = "", float p = 0) {
+        setTitle(n);
+        setPrice(p);
+    }
+
+    // Setters and Getters
+    void setTitle(string n) {
+        title = n;
+    }
+
+    void setPrice(float p) {
+        price = p;
+    }
+
+    float getPrice() {
+        return price;
+    }
+
+    string getTitle() {
+        return title;
+    }
+
+    // Virtual function for polymorphism
+    virtual void getData() = 0; // Pure virtual function
+};
+
+class book : public publication {
+private:
+    int pageCount;
+
+public:
+    // Constructor
+    book(string n = "", float p = 0, int pg = 0) : publication(n, p) {
+        setPageCount(pg);
+    }
+
+    // Setter and Getter for page count
+    void setPageCount(int count) {
+        pageCount = count;
+    }
+
+    int getPageCount() {
+        return pageCount;
+    }
+
+    // Override the virtual function to display book details
+    void getData() override {
+        cout << "Book's Title is: " << getTitle() << endl;
+        cout << "Book's Price is: " << getPrice() << " RS" << endl;
+        cout << "Book's PageCount is: " << getPageCount() << " Pages" << endl;
+    }
+};
+
+class tape : public publication {
+private:
+    float playTime;
+
+public:
+    // Constructor
+    tape(string n = "", float p = 0, float t = 0) : publication(n, p) {
+        setTime(t);
+    }
+
+    // Setter and Getter for playtime
+    void setTime(float time) {
+        playTime = time;
+    }
+
+    float getTime() {
+        return playTime;
+    }
+
+    // Override the virtual function to display tape details
+    void getData() override {
+        cout << "Tape's Title is: " << getTitle() << endl;
+        cout << "Tape's Price is: " << getPrice() << " RS" << endl;
+        cout << "Tape's Time is: " << getTime() << " minutes" << endl;
+    }
+};
+
+int main() {
+    try {
+        // Book
+        book b1("Hello", 433.99, 500);
+        b1.getData();
+
+        // Tape
+        tape t1("DJWALLE", 499.09, 149.04);
+        t1.getData();
+
+        // Polymorphism: Creating base class pointer and pointing to derived class
+        publication* p = new book("SUCCESS", 399, 125);
+        p->getData();
+
+        p = new tape("THE TRUTH", 245, 200);
+        p->getData();
+
+        // Clean up dynamic memory
+        delete p;
+    }
+    catch (const exception& e) {
+        cout << "Exception caught: " << e.what() << endl;
+        // Set default values if exception occurs
+        book b1;
+        b1.getData();
+
+        tape t1;
+        t1.getData();
+    }
+
+    return 0;
+}
+
+
+
+
+//4. output file , writes info. cllose the file open it,and read the info.:
+
+#include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
+
+int main() {
+    // Creating and writing to the output file
+    ofstream outfile("output.txt");
+    
+    if (!outfile) {
+        cerr << "ERROR in opening output file!" << endl;
+        return 1;
+    }
+
+    int n;
+    cout << "Enter number of lines in file: ";
+    cin >> n;
+    cin.ignore(); // To ignore the newline character left by cin
+
+    string line;
+    for (int i = 0; i < n; i++) {
+        cout << "Enter line " << i + 1 << ": ";
+        getline(cin, line);
+        outfile << line << endl;
+    }
+    outfile.close(); // Closing the output file
+
+    // Reading from the file
+    ifstream infile("output.txt");
+
+    if (!infile) {
+        cerr << "ERROR in opening input file!" << endl;
+        return 1;
+    }
+
+    string readline;
+    cout << "\nReading from the file:\n";
+    for (int i = 0; i < n; i++) {
+        if (infile.eof()) {
+            cout << "Reached the end of the file!" << endl;
+            break;
+        }
+        getline(infile, readline);
+        cout << readline << "-" << endl;
+    }
+    infile.close(); // Closing the input file
+
+    return 0;
+}
+
+
+
+//5. a function template selection sort  ;  input output sorts an intger arrray , float array
+
+#include <iostream>
+using namespace std;
+
+// Function template to calculate sum of two elements
+template <class T>
+T sum(T a, T b) {
+    return a + b;
+}
+
+// Function template to input elements into an array
+template <class T>
+void inputArray(T arr[], int size) {
+    cout << "Enter " << size << " elements in the array:" << endl;
+    for (int i = 0; i < size; i++) {
+        cin >> arr[i];
+    }
+}
+
+// Function template to print elements of an array
+template <class T>
+void printArray(T array[], int size) {
+    for (int i = 0; i < size; i++) {
+        cout << array[i] << " ";
+    }
+    cout << endl;
+}
+
+// Function template to perform selection sort on an array
+template <class T>
+void selectionSort(T arr[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        int minIndex = i;
+        for (int j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIndex]) {
+                minIndex = j;
+            }
+        }
+        swap(arr[i], arr[minIndex]);
+    }
+}
+
+int main() {
+    // Example usage of sum function
+    int a = 10, b = 20;
+    cout << "Sum of integers: " << sum(a, b) << endl;
+    cout << "Sum of floats: " << sum(10.5f, 20.5f) << endl;
+
+    // Sorting an integer array
+    int intArray[5];
+    inputArray(intArray, 5);
+    cout << "Array without sorting is: ";
+    printArray(intArray, 5);
+    selectionSort(intArray, 5);
+    cout << "Array after sorting is: ";
+    printArray(intArray, 5);
+
+    // Sorting a float array
+    float floatArray[10];
+    inputArray(floatArray, 10);
+    cout << "Array without sorting is: ";
+    printArray(floatArray, 10);
+    selectionSort(floatArray, 10);
+    cout << "Array after sorting is: ";
+    printArray(floatArray, 10);
+
+    return 0;
+}
+
+
+
+
+//6.  use stl for sorting and searching (name , dob , telephone , etc )
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <string>
+#include <iomanip>
+
+struct PersonalRecord {
+    std::string name;
+    std::string dob; // Date of birth in the format YYYY-MM-DD
+    std::string telephone;
+
+    // Overload the < operator for sorting by name
+    bool operator<(const PersonalRecord& other) const {
+        return name < other.name; // Sort by name
+    }
+};
+
+void displayRecords(const std::vector<PersonalRecord>& records) {
+    std::cout << std::left << std::setw(20) << "Name"
+              << std::setw(15) << "DOB"
+              << std::setw(15) << "Telephone" << std::endl;
+
+    for (const auto& record : records) {
+        std::cout << std::left << std::setw(20) << record.name
+                  << std::setw(15) << record.dob
+                  << std::setw(15) << record.telephone << std::endl;
+    }
+}
+
+int main() {
+    std::vector<PersonalRecord> records;
+    int n;
+
+    std::cout << "Enter number of records: ";
+    std::cin >> n;
+    std::cin.ignore(); // Ignore newline after the number input
+
+    // Input personal records
+    for (int i = 0; i < n; ++i) {
+        PersonalRecord record;
+        std::cout << "Enter name: ";
+        std::getline(std::cin, record.name);
+        std::cout << "Enter DOB (YYYY-MM-DD): ";
+        std::getline(std::cin, record.dob);
+        std::cout << "Enter telephone number: ";
+        std::getline(std::cin, record.telephone);
+
+        records.push_back(record);
+    }
+
+    // Sort records by name
+    std::sort(records.begin(), records.end());
+
+    std::cout << "\nSorted Records:\n";
+    displayRecords(records);
+
+    // Search for a specific record by name
+    std::string searchName;
+    std::cout << "\nEnter name to search: ";
+    std::getline(std::cin, searchName);
+
+    auto it = std::find_if(records.begin(), records.end(), [&searchName](const PersonalRecord& record) {
+        return record.name == searchName;
+    });
+
+    if (it != records.end()) {
+        std::cout << "\nRecord found:\n";
+        displayRecords({*it});
+    } else {
+        std::cout << "\nRecord not found.\n";
+    }
+
+    return 0;
+}
+
+
+
+//7. key : name of state ,  values : population 
+
+#include<iostream>
+#include<map>
+#include<string>
+
+using namespace std;
+
+int main() {
+
+    typedef map<string, int> mapType;
+    mapType populationMap;
+
+    // Inserting data into the map
+    populationMap.insert(pair<string, int>("Maharashtra", 7026357));
+    populationMap.insert(pair<string, int>("Rajasthan", 6578936));
+    populationMap.insert(pair<string, int>("Karnataka", 6678993));  // Fixed the spelling from Karanataka to Karnataka
+    populationMap.insert(pair<string, int>("Punjab", 5789032));
+    populationMap.insert(pair<string, int>("West Bengal", 6676291));
+
+    mapType::iterator iter;
+
+    // Displaying the population of states
+    cout << "Population of states in India\n";
+    cout << "\nSize of populationMap: " << populationMap.size() << "\n";
+
+    string state_name;
+    cout << "\nEnter name of the state: ";
+    cin >> state_name;
+
+    // Finding the state in the map
+    iter = populationMap.find(state_name);
+
+    if (iter != populationMap.end()) {
+        // If the state is found, display its population
+        cout << state_name << "'s population is " << iter->second << endl;
+    } else {
+        // If the state is not found
+        cout << "State not found in populationMap.\n";
+    }
+
+    // Clear the map
+    populationMap.clear();
+
+    return 0;
+}
+
+
+
